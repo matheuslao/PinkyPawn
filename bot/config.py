@@ -1,7 +1,7 @@
 import os
 from dotenv import load_dotenv
 
-# Carrega variáveis de ambiente
+# Load environment variables
 load_dotenv()
 
 class Config:
@@ -18,7 +18,7 @@ class Config:
     ENGINE_TIME_LIMIT = float(os.getenv('ENGINE_TIME_LIMIT', 2.0))
     
     
-    # Filtros
+    # Filters
     ACCEPT_VARIANTS = os.getenv('ACCEPT_VARIANTS', 'standard').split(',')
     MIN_RATING = int(os.getenv('MIN_RATING', 0))
     MAX_RATING = int(os.getenv('MAX_RATING', 3000))
@@ -30,7 +30,7 @@ class Config:
     
     @classmethod
     def validate(cls):
-        """Valida configurações obrigatórias"""
+        """Validate required configuration."""
         if not cls.LICHESS_TOKEN:
-            raise ValueError("LICHESS_TOKEN não configurado!")
+            raise ValueError("LICHESS_TOKEN not configured!")
         return True

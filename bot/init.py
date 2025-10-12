@@ -1,1 +1,1 @@
-# Arquivo vazio para tornar bot um pacote Python
+# Empty file to make `bot` a Python package
