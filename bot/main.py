@@ -4,6 +4,9 @@ import chess.engine
 import threading
 import logging
 from config import Config
+from engines.base_engine import BaseEngine
+from engines.random_engine import RandomEngine
+from engines.stockfish_engine import StockfishEngine
 
 # Configura logging
 logging.basicConfig(
@@ -22,15 +25,22 @@ class LichessBot:
         
         session = berserk.TokenSession(Config.LICHESS_TOKEN)
         self.client = berserk.Client(session)
-        self.engine = chess.engine.SimpleEngine.popen_uci(Config.STOCKFISH_PATH)
-        
-        # Configura o engine
-        self.engine.configure({
-            "Skill Level": Config.ENGINE_SKILL_LEVEL,
-            "Threads": Config.ENGINE_THREADS,
-        })
+
+        # Instancia a engine configurada
+        impl = Config.ENGINE_IMPLEMENTATION.lower()
+        if impl == 'stockfish':
+            self.engine: BaseEngine = StockfishEngine(
+                path=Config.STOCKFISH_PATH,
+                skill_level=Config.ENGINE_SKILL_LEVEL,
+                threads=Config.ENGINE_THREADS,
+            )
+        elif impl == 'random':
+            self.engine = RandomEngine()
+        else:
+            raise ValueError(f"Engine implementation desconhecida: {Config.ENGINE_IMPL}")
         
         logger.info("Bot inicializado com sucesso!")
+        logger.info(f"Engine implementation: {impl}")
         logger.info(f"Engine Skill Level: {Config.ENGINE_SKILL_LEVEL}")
         
     def should_accept_challenge(self, challenge):
@@ -149,19 +159,16 @@ class LichessBot:
         logger.info(f"Calculando jogada para {game_id}...")
         
         try:
-            result = self.engine.play(
-                board, 
-                chess.engine.Limit(time=Config.ENGINE_TIME_LIMIT)
-            )
-            move = result.move
-            
+            # Use nossa camada de engine para obter a jogada
+            move = self.engine.get_move(board, Config.ENGINE_TIME_LIMIT)
+
             if move is None:
                 logger.error(f"Engine retornou jogada None!")
                 return
-            
+
             # Envia a jogada usando bots API
             self.client.bots.make_move(game_id, move.uci())
-            
+
             # Log da jogada em formato mais legível
             san_move = board.san(move)
             logger.info(f"Jogada enviada: {move.uci()} ({san_move})")
@@ -203,7 +210,11 @@ class LichessBot:
         """Finaliza o bot"""
         logger.info("Encerrando bot...")
         try:
-            self.engine.quit()
+            # Fecha engine abstrata
+            try:
+                self.engine.close()
+            except Exception as e:
+                logger.error(f"Erro ao fechar engine: {e}")
         except Exception as e:
             logger.error(f"Erro ao fechar engine: {e}")
         logger.info("Bot finalizado!")

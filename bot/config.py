@@ -7,12 +7,16 @@ load_dotenv()
 class Config:
     # Lichess
     LICHESS_TOKEN = os.getenv('LICHESS_TOKEN')
+
+    # Engine implementation: 'stockfish' or 'random'
+    ENGINE_IMPLEMENTATION = os.getenv('ENGINE_IMPLEMENTATION', 'stockfish')
     
     # Stockfish
     STOCKFISH_PATH = os.getenv('STOCKFISH_PATH', '/usr/local/bin/stockfish')
     ENGINE_SKILL_LEVEL = int(os.getenv('ENGINE_SKILL_LEVEL', 10))
     ENGINE_THREADS = int(os.getenv('ENGINE_THREADS', 2))
     ENGINE_TIME_LIMIT = float(os.getenv('ENGINE_TIME_LIMIT', 2.0))
+    
     
     # Filtros
     ACCEPT_VARIANTS = os.getenv('ACCEPT_VARIANTS', 'standard').split(',')
