@@ -39,7 +39,7 @@ class LichessBot:
         else:
                 raise ValueError(f"Unknown engine implementation: {Config.ENGINE_IMPL}")
         
-        logger.info("Bot inicializado com sucesso!")
+        logger.info("Bot initialized successfully!")
         logger.info(f"Engine implementation: {impl}")
         logger.info(f"Engine Skill Level: {Config.ENGINE_SKILL_LEVEL}")
         
@@ -159,7 +159,6 @@ class LichessBot:
         logger.info(f"Calculating move for {game_id}...")
         
         try:
-            # Use nossa camada de engine para obter a jogada
             # Use our engine layer to obtain the move
             move = self.engine.get_move(board, Config.ENGINE_TIME_LIMIT)
 
@@ -167,7 +166,7 @@ class LichessBot:
                 logger.error(f"Engine returned move None!")
                 return
 
-            # Envia a jogada usando bots API
+            # Send the move using bots API
             self.client.bots.make_move(game_id, move.uci())
 
             # Log the move in a more readable format
@@ -211,7 +210,7 @@ class LichessBot:
         """Shutdown the bot."""
         logger.info("Shutting down bot...")
         try:
-            # Fecha engine abstrata
+            # Close abstract engine
             try:
                 self.engine.close()
             except Exception as e:

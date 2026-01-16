@@ -1,26 +1,26 @@
 FROM python:3.11-slim
 
-# Instala dependências do sistema
+# Install system dependencies
 RUN apt-get update && apt-get install -y \
     wget \
     && rm -rf /var/lib/apt/lists/*
 
-# Cria diretório de trabalho
+# Create working directory
 WORKDIR /app
 
-# Baixa o Stockfish
+# Download Stockfish
 RUN wget https://github.com/official-stockfish/Stockfish/releases/download/sf_16.1/stockfish-ubuntu-x86-64-avx2.tar \
     && tar -xvf stockfish-ubuntu-x86-64-avx2.tar \
     && mv stockfish/stockfish-ubuntu-x86-64-avx2 /usr/local/bin/stockfish \
     && chmod +x /usr/local/bin/stockfish \
     && rm -rf stockfish-ubuntu-x86-64-avx2.tar stockfish
 
-# Copia requirements e instala dependências Python
+# Copy requirements and install Python dependencies
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copia o código da aplicação
+# Copy application code
 COPY . .
 
-# Comando padrão
+# Default command
 CMD ["python", "-u", "bot/main.py"]

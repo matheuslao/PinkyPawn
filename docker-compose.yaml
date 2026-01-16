@@ -7,9 +7,9 @@ services:
     env_file:
       - .env
     volumes:
-      # Monta o código local para desenvolvimento (hot reload)
+      # Mount local code for development (hot reload)
       - ./bot:/app/bot
-      # Volume para logs
+      # Volume for logs
       - ./logs:/app/logs
     restart: unless-stopped
     environment:
