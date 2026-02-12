@@ -1,9 +1,10 @@
-FROM python:3.11-slim
+FROM python:3.13-slim
 
-# Install system dependencies
+# Install system dependencies and upgrade pip
 RUN apt-get update && apt-get install -y \
     wget \
-    && rm -rf /var/lib/apt/lists/*
+    && rm -rf /var/lib/apt/lists/* \
+    && pip install --upgrade pip
 
 # Create working directory
 WORKDIR /app
