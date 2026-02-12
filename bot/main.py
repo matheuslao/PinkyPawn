@@ -7,6 +7,7 @@ from config import Config
 from engines.base_engine import BaseEngine
 from engines.random_engine import RandomEngine
 from engines.stockfish_engine import StockfishEngine
+from engines.pinkypawn_engine import PinkyPawnEngine
 
 # Configure logging
 logging.basicConfig(
@@ -36,8 +37,10 @@ class LichessBot:
             )
         elif impl == 'random':
             self.engine = RandomEngine()
+        elif impl == 'pinkypawn':
+            self.engine = PinkyPawnEngine()
         else:
-                raise ValueError(f"Unknown engine implementation: {Config.ENGINE_IMPL}")
+            raise ValueError(f"Unknown engine implementation: {Config.ENGINE_IMPL}")
         
         logger.info("Bot initialized successfully!")
         logger.info(f"Engine implementation: {impl}")
