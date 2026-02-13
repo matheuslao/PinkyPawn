@@ -11,8 +11,28 @@ class PinkyPawnEngine(BaseEngine):
     Idea: evaluate each legal move by assigning points for:
     
       - Checkmate: maximum score, best possible move.
+      - Check: checking the opponent's king is good
+      - Captures: capturing opponent's pieces is good
+      - Control of the center: moves that control the center are good
     
-    """    
+    """
+
+    # Heuristic values for pieces. These can be adjusted based on the engine's preferences.
+    PIECE_VALUES = {
+        chess.PAWN: 1,
+        chess.KNIGHT: 3,
+        chess.BISHOP: 3,
+        chess.ROOK: 5,
+        chess.QUEEN: 9,
+        chess.KING: 0
+    }
+
+    # Central control is important in chess, so we can assign points for moves that control the center.
+    CENTER_SQUARES = [chess.E4, chess.D4, chess.E5, chess.D5]
+    EXTENDED_CENTER = [chess.C3, chess.C4, chess.C5, chess.C6,
+                       chess.D3, chess.D6,
+                       chess.E3, chess.E6,
+                       chess.F3, chess.F4, chess.F5, chess.F6]
 
     def __init__(self) -> None:
         super().__init__()
@@ -49,6 +69,21 @@ class PinkyPawnEngine(BaseEngine):
         if board.is_checkmate():
             score += 10000
 
+        # 2. CHECK: checking the opponent's king is good
+        if board.gives_check(move):
+            score += 50
+
+        # 3. CAPTURE: capturing opponent's pieces is good
+        if board.is_capture(move):
+            captured_piece = board.piece_at(move.to_square)
+            if captured_piece:
+                score += self.PIECE_VALUES[captured_piece.piece_type] * 10
+
+        # 4. CONTROL OF THE CENTER: moves that control the center are good
+        if move.to_square in self.CENTER_SQUARES:
+            score += 20
+        elif move.to_square in self.EXTENDED_CENTER:
+            score += 10
      
 
         return score
