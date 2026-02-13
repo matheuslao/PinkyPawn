@@ -132,22 +132,39 @@ class PinkyPawnEngine(BaseEngine):
             if not (board.is_kingside_castling(move)):
                 score += 5  # Queenside castling slightly more flexible
 
-        # 6. PIECE SAFETY: ensure moved piece isn't left hanging (contextualized by point balance)
+        # 6. PIECE SAFETY: avoid unfavorable trades and exposed pieces
         piece_moved = board.piece_at(move.from_square)
+        captured_piece = board.piece_at(move.to_square) if board.is_capture(move) else None
+        
         if piece_moved:
+            moving_piece_value = self.PIECE_VALUES[piece_moved.piece_type]
             board.push(move)
-            # Check if the moved piece is attacked and undefended
-            if board.is_attacked_by(not board.turn, move.to_square):
-                defenders = len(board.attackers(not board.turn, move.to_square))
+            
+            # Check if the moved piece is attacked
+            if board.is_attacked_by(board.turn, move.to_square):
                 attackers = len(board.attackers(board.turn, move.to_square))
+                defenders = len(board.attackers(not board.turn, move.to_square))
                 
-                if defenders > attackers:
-                    # More valuable if we're winning the exchange
-                    score += 10
-                elif defenders < attackers:
-                    # Penalty if piece is hanging
-                    piece_value = self.PIECE_VALUES[piece_moved.piece_type]
-                    score += self.HEURISTIC_WEIGHTS['piece_safety'] * piece_value
+                # If capturing, evaluate the trade
+                if captured_piece:
+                    captured_value = self.PIECE_VALUES[captured_piece.piece_type]
+                    
+                    # Penalize if losing material in forced trade (attacker > defender)
+                    if moving_piece_value > captured_value and attackers > defenders:
+                        # Higher penalty multiplier for valuable pieces (Queen, Rook)
+                        multiplier = 20 if moving_piece_value >= 5 else 15
+                        material_loss = (moving_piece_value - captured_value) * multiplier
+                        score -= material_loss
+                    # Bonus if winning the exchange
+                    elif moving_piece_value < captured_value and attackers <= defenders:
+                        material_gain = (captured_value - moving_piece_value) * 8
+                        score += material_gain
+                else:
+                    # Not capturing: piece is hanging
+                    if attackers > defenders:
+                        penalty = self.HEURISTIC_WEIGHTS['piece_safety'] * moving_piece_value
+                        score += penalty
+            
             board.pop()
 
         # 7. POSITIONAL CONTROL: bonus for moves that control more squares
