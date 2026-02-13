@@ -49,7 +49,7 @@ class PinkyPawnEngine(BaseEngine):
             score = self._evaluate_move(board, move)
 
             # If checkmate found, return immediately
-            if score >= 10000:
+            if score == 10000:
                 return move
 
             if score > best_score:
@@ -67,7 +67,7 @@ class PinkyPawnEngine(BaseEngine):
 
         # 1. CHECKMATE: best possible move!
         if board.is_checkmate():
-            score += 10000
+            return 10000
 
         # 2. CHECK: checking the opponent's king is good
         if board.gives_check(move):
