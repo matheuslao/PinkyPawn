@@ -41,12 +41,12 @@ class PinkyPawnEngine(BaseEngine):
     # Configurable weights for heuristics. Adjust these to change engine behavior.
     HEURISTIC_WEIGHTS = {
         'checkmate': 10000,
-        'check': 50,
-        'capture': 10,
+        'check': 10,
+        'capture': 30,
         'center_control': 20,
         'extended_center': 10,
         'castling': 15,
-        'piece_safety': -30,  # Penalty for hanging pieces
+        'piece_safety': -50,  # Penalty for hanging pieces
         'positional_control': 5,  # Bonus for controlling more squares
     }
 
