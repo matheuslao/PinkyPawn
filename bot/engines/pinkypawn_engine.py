@@ -6,19 +6,20 @@ from typing import Dict
 
 class PinkyPawnEngine(BaseEngine):
     """
-    Empirical engine based on intuitive chess heuristics.
+    Empirical engine based on intuitive chess heuristics with 1-ply lookahead.
 
-    Idea: evaluate each legal move by combining contextual heuristics:
+    Core heuristics evaluated and combined:
     
-      - Checkmate: maximum score, best possible move.
-      - Check: checking the opponent's king
-      - Captures: capturing opponent's pieces (weighted by piece value)
-      - Control of the center: occupying key central squares
-      - Castling: general positional security
-      - Piece safety: ensure moved pieces aren't left hanging
-      - Positional evaluation: reward moves that control more squares
+      - Checkmate: maximum score, immediate win.
+      - Check: attacking opponent's king (contextual bonus if restricting squares).
+      - Captures: weighted by piece value, with positional bonuses.
+      - Center control: opening emphasis on core center, middlegame on extended center.
+      - Castling: early game safety bonus.
+      - Piece vulnerability (1-ply lookahead): tracks if moves expose pieces to attacks,
+        preventing tactical blunders.
     
-    Heuristics are weighted and combined, not isolated.
+    All heuristics are contextualized and combined, creating interdependencies rather
+    than isolated evaluations. This maintains the engine's exploratory, intuitive nature.
     """
 
     # Heuristic values for pieces (material value).
@@ -132,38 +133,53 @@ class PinkyPawnEngine(BaseEngine):
             if not (board.is_kingside_castling(move)):
                 score += 5  # Queenside castling slightly more flexible
 
-        # 6. PIECE SAFETY: avoid unfavorable trades and exposed pieces
+        # 6. PIECE VULNERABILITY (1-PLY LOOKAHEAD): Comprehensive safety analysis
+        # Checks if any of our pieces become vulnerable after this move.
+        # Prevents tactical blunders like exd6 exposing the queen to a bishop.
+        # Also evaluates trades: if we capture but our piece gets attacked after.
+        
         piece_moved = board.piece_at(move.from_square)
         captured_piece = board.piece_at(move.to_square) if board.is_capture(move) else None
         
         if piece_moved:
-            moving_piece_value = self.PIECE_VALUES[piece_moved.piece_type]
             board.push(move)
             
-            # Check if the moved piece is attacked
-            if board.is_attacked_by(board.turn, move.to_square):
-                attackers = len(board.attackers(board.turn, move.to_square))
-                defenders = len(board.attackers(not board.turn, move.to_square))
-                
-                # If capturing, evaluate the trade
-                if captured_piece:
-                    captured_value = self.PIECE_VALUES[captured_piece.piece_type]
-                    
-                    # Penalize if losing material in forced trade (attacker > defender)
-                    if moving_piece_value > captured_value and attackers > defenders:
-                        # Higher penalty multiplier for valuable pieces (Queen, Rook)
-                        multiplier = 20 if moving_piece_value >= 5 else 15
-                        material_loss = (moving_piece_value - captured_value) * multiplier
-                        score -= material_loss
-                    # Bonus if winning the exchange
-                    elif moving_piece_value < captured_value and attackers <= defenders:
-                        material_gain = (captured_value - moving_piece_value) * 8
-                        score += material_gain
-                else:
-                    # Not capturing: piece is hanging
-                    if attackers > defenders:
-                        penalty = self.HEURISTIC_WEIGHTS['piece_safety'] * moving_piece_value
-                        score += penalty
+            # Check all our valuable pieces for vulnerabilities after this move
+            for piece_type in [chess.QUEEN, chess.ROOK, chess.BISHOP, chess.KNIGHT]:
+                for square in board.pieces(piece_type, not board.turn):  # our pieces
+                    # Check if opponent can attack this square after our move
+                    if board.is_attacked_by(board.turn, square):
+                        attackers = len(board.attackers(board.turn, square))
+                        defenders = len(board.attackers(not board.turn, square))
+                        
+                        # If more attackers than defenders, piece is vulnerable
+                        if attackers > defenders:
+                            # Special handling for the piece we just moved
+                            if square == move.to_square:
+                                moving_piece_value = self.PIECE_VALUES[piece_moved.piece_type]
+                                
+                                # If we captured, evaluate the trade
+                                if captured_piece:
+                                    captured_value = self.PIECE_VALUES[captured_piece.piece_type]
+                                    
+                                    # Penalize if losing material in forced trade
+                                    if moving_piece_value > captured_value:
+                                        multiplier = 20 if moving_piece_value >= 5 else 15
+                                        material_loss = (moving_piece_value - captured_value) * multiplier
+                                        score -= material_loss
+                                    # Bonus if winning the exchange
+                                    elif moving_piece_value < captured_value:
+                                        material_gain = (captured_value - moving_piece_value) * 8
+                                        score += material_gain
+                                else:
+                                    # Piece hangs without capturing anything
+                                    penalty = self.HEURISTIC_WEIGHTS['piece_safety'] * moving_piece_value
+                                    score += penalty
+                            else:
+                                # Other pieces become vulnerable (e.g., queen exposed after exd6)
+                                piece_value = self.PIECE_VALUES[piece_type]
+                                vulnerability_penalty = piece_value * 20
+                                score -= vulnerability_penalty
             
             board.pop()
 
